@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banner Automation Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Animation for the loader */
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen p-8 font-sans">
+    
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold mb-2 text-gray-800">Banner Generator <span class="text-sm bg-blue-100 text-blue-800 py-1 px-2 rounded align-middle">Server Edition</span></h1>
+        
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8 border border-gray-200">
+            <form id="uploadForm" class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                <div>
+                    <label class="block text-sm font-bold mb-2 text-gray-700">1. SVG Template</label>
+                    <input type="file" name="svg" accept=".svg" required class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border rounded"/>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-2 text-gray-700">2. CSV Data</label>
+                    <input type="file" name="csv" accept=".csv" required class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:bg-green-50 file:text-green-700 hover:file:bg-green-100 border rounded"/>
+                </div>
+                <button type="submit" id="generateBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded shadow transition-colors flex justify-center items-center gap-2">
+                    <span>Generate Previews</span>
+                </button>
+            </form>
+            <div id="loadingStatus" class="hidden mt-4 text-center text-blue-600 flex justify-center items-center gap-2">
+                <div class="loader"></div> <span>Processing on server... this may take 10-20 seconds.</span>
+            </div>
+        </div>
+
+        <div id="actionToolbar" class="hidden flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-700">Generated Results</h2>
+            <a id="downloadAllLink" href="#" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded shadow flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                Download All (ZIP)
+            </a>
+        </div>
+
+        <div id="outputGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('uploadForm');
+        const grid = document.getElementById('outputGrid');
+        const toolbar = document.getElementById('actionToolbar');
+        const loader = document.getElementById('loadingStatus');
+        const btn = document.getElementById('generateBtn');
+
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            
+            // UI State: Loading
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
+            loader.classList.remove('hidden');
+            toolbar.classList.add('hidden');
+            grid.innerHTML = '';
+
+            const formData = new FormData(e.target);
+
+            try {
+                const res = await fetch('/api/generate', { method: 'POST', body: formData });
+                const data = await res.json();
+
+                if (!data.success) throw new Error(data.error);
+
+                // Success!
+                renderGrid(data.sessionId, data.files);
+                
+                // Setup Download All Button
+                document.getElementById('downloadAllLink').href = `/api/download-zip/${data.sessionId}`;
+                toolbar.classList.remove('hidden');
+
+            } catch (err) {
+                alert("Error: " + err.message);
+            } finally {
+                // UI State: Reset
+                btn.disabled = false;
+                btn.classList.remove('opacity-50');
+                loader.classList.add('hidden');
+            }
+        };
+
+        function renderGrid(sessionId, files) {
+            files.forEach(file => {
+                // Use the server's temp folder path
+                const imageUrl = `/temp/${sessionId}/${file.fileName}`;
+
+                const div = document.createElement('div');
+                div.className = "bg-white p-4 rounded shadow relative group border border-gray-100";
+                div.innerHTML = `
+                    <div class="w-full bg-gray-100 rounded overflow-hidden relative">
+                        <img src="${imageUrl}" class="w-full h-auto object-cover" loading="lazy">
+                        
+                        <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-200"></div>
+
+                        <a href="${imageUrl}" download="${file.fileName}" class="absolute top-2 right-2 bg-white hover:bg-gray-100 text-gray-700 p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-200 border border-gray-200" title="Download PNG">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        </a>
+                    </div>
+                    <p class="mt-3 text-center text-sm font-medium text-gray-600 truncate">${file.name}</p>
+                `;
+                grid.appendChild(div);
+            });
+        }
+    </script>
+</body>
+</html>
