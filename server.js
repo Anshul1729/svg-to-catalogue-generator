@@ -53,10 +53,15 @@ async function generateBanners(svgPath, csvPath, outputDir) {
     `;
     svgTemplate = `<style>${fontCss}</style>` + svgTemplate;
 
-    // Configure for Render deployment
-    // Puppeteer will automatically find Chrome in its cache directory
+    // Configure for Render deployment with Docker
+    // In Puppeteer Docker image, Chrome is at /usr/bin/google-chrome-stable
+    const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || 
+                          (fs.existsSync('/usr/bin/google-chrome-stable') ? '/usr/bin/google-chrome-stable' : 
+                           fs.existsSync('/usr/bin/google-chrome') ? '/usr/bin/google-chrome' : undefined);
+    
     const browser = await puppeteer.launch({
         headless: true,
+        executablePath: executablePath,
         args: [
             '--no-sandbox', 
             '--disable-setuid-sandbox', 

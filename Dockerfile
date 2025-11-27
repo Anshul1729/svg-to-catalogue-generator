@@ -10,7 +10,8 @@ RUN npm install
 COPY . .
 
 RUN mkdir -p uploads public/temp && \
-    chown -R pptruser:pptruser /app
+    chown -R pptruser:pptruser /app && \
+    chown -R pptruser:pptruser /home/pptruser/.cache
 
 USER pptruser
 EXPOSE 3000
