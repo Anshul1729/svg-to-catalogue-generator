@@ -8,7 +8,10 @@ const path = require('path');
 const cors = require('cors');
 
 const app = express();
-const upload = multer({ dest: 'uploads/' });
+const os = require('os');
+const uploadDir = process.env.UPLOAD_DIR || path.join(os.tmpdir(), 'kc-uploads');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+const upload = multer({ dest: uploadDir });
 
 app.use(cors());
 app.use(express.static('public')); // Serve frontend
@@ -55,13 +58,12 @@ async function generateBanners(svgPath, csvPath, outputDir) {
 
     
     const browser = await puppeteer.launch({
-        headless: 'new',
-        // CRITICAL FIX: Tell it where Chrome lives in the Docker container
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+        headless: true,
         args: [
             '--no-sandbox', 
             '--disable-setuid-sandbox', 
-            '--disable-web-security'
+            '--disable-web-security',
+            '--disable-dev-shm-usage'
         ]
     });
 

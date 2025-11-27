@@ -1,12 +1,11 @@
 {
   "name": "kc",
   "version": "1.0.0",
-  "description": "",
-  "main": "generate.js",
+  "description": "SVG to Catalogue Generator",
+  "main": "server.js",
   "scripts": {
     "build": "npx puppeteer browsers install chrome",
-    "start": "node your-app.js"
-
+    "start": "node server.js"
   },
   "keywords": [],
   "author": "",
@@ -19,5 +18,8 @@
     "multer": "^2.0.2",
     "papaparse": "^5.5.3",
     "puppeteer": "^24.31.0"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }
