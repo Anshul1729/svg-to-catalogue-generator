@@ -8,10 +8,7 @@ const path = require('path');
 const cors = require('cors');
 
 const app = express();
-const os = require('os');
-const uploadDir = process.env.UPLOAD_DIR || path.join(os.tmpdir(), 'kc-uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-const upload = multer({ dest: uploadDir });
+const upload = multer({ dest: 'uploads/' });
 
 app.use(cors());
 app.use(express.static('public')); // Serve frontend
@@ -56,7 +53,7 @@ async function generateBanners(svgPath, csvPath, outputDir) {
     `;
     svgTemplate = `<style>${fontCss}</style>` + svgTemplate;
 
-    
+    // FIX: Removed executablePath - Docker's Chrome will be auto-detected
     const browser = await puppeteer.launch({
         headless: true,
         args: [
@@ -66,7 +63,6 @@ async function generateBanners(svgPath, csvPath, outputDir) {
             '--disable-dev-shm-usage'
         ]
     });
-
 
     const page = await browser.newPage();
     await page.setViewport({ width: finalWidth, height: finalHeight });
@@ -86,11 +82,10 @@ async function generateBanners(svgPath, csvPath, outputDir) {
             currentSvg = currentSvg.replace(new RegExp(`{{\\s*${key}\\s*}}`, 'g'), row[key] || "");
         });
 
-        // CHANGE 1: Use 'domcontentloaded' (Fast) instead of 'networkidle0' (Slow)
-        // CHANGE 2: Increase timeout to 60 seconds (60000ms) just in case
+        // Use 'domcontentloaded' (Fast) instead of 'networkidle0' (Slow)
         await page.setContent(currentSvg, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
-        // CHANGE 3: Explicitly wait for Fonts to load
+        // Explicitly wait for Fonts to load
         await page.evaluate(async () => {
             await document.fonts.ready; 
         });
@@ -141,18 +136,22 @@ app.post('/api/generate', upload.fields([{ name: 'svg' }, { name: 'csv' }]), asy
         // Create unique session folder
         const sessionId = Date.now().toString();
         const sessionDir = path.join(PUBLIC_TEMP_DIR, sessionId);
-        fs.mkdirSync(sessionDir);
+        fs.mkdirSync(sessionDir, { recursive: true });
 
         const files = await generateBanners(req.files.svg[0].path, req.files.csv[0].path, sessionDir);
 
         // Cleanup uploads
-        fs.unlinkSync(req.files.svg[0].path);
-        fs.unlinkSync(req.files.csv[0].path);
+        try {
+            fs.unlinkSync(req.files.svg[0].path);
+            fs.unlinkSync(req.files.csv[0].path);
+        } catch(e) {
+            console.log("Cleanup warning:", e.message);
+        }
 
         res.json({ success: true, sessionId, files });
 
     } catch (e) {
-        console.error(e);
+        console.error("Generation error:", e);
         res.status(500).json({ success: false, error: e.message });
     }
 });
@@ -172,4 +171,6 @@ app.get('/api/download-zip/:sessionId', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
+app.listen(PORT, () => {
+    console.log(`🚀 Banner Generator Server running at http://localhost:${PORT}`);
+});

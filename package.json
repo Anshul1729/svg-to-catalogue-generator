@@ -4,7 +4,6 @@
   "description": "SVG to Catalogue Generator",
   "main": "server.js",
   "scripts": {
-    "build": "npx puppeteer browsers install chrome",
     "start": "node server.js"
   },
   "keywords": [],
@@ -18,8 +17,5 @@
     "multer": "^2.0.2",
     "papaparse": "^5.5.3",
     "puppeteer": "^24.31.0"
-  },
-  "engines": {
-    "node": "18.x"
   }
 }
