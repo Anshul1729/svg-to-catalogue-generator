@@ -53,10 +53,19 @@ async function generateBanners(svgPath, csvPath, outputDir) {
     `;
     svgTemplate = `<style>${fontCss}</style>` + svgTemplate;
 
+    
     const browser = await puppeteer.launch({
         headless: 'new',
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-web-security']
+        // CRITICAL FIX: Tell it where Chrome lives in the Docker container
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+        args: [
+            '--no-sandbox', 
+            '--disable-setuid-sandbox', 
+            '--disable-web-security'
+        ]
     });
+
+
     const page = await browser.newPage();
     await page.setViewport({ width: finalWidth, height: finalHeight });
     await page.setBypassCSP(true);
