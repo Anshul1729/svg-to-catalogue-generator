@@ -53,14 +53,18 @@ async function generateBanners(svgPath, csvPath, outputDir) {
     `;
     svgTemplate = `<style>${fontCss}</style>` + svgTemplate;
 
-    // FIX: Removed executablePath - Docker's Chrome will be auto-detected
+    // Configure for Render deployment
+    // Puppeteer will automatically find Chrome in its cache directory
     const browser = await puppeteer.launch({
         headless: true,
         args: [
             '--no-sandbox', 
             '--disable-setuid-sandbox', 
             '--disable-web-security',
-            '--disable-dev-shm-usage'
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--single-process',
+            '--disable-software-rasterizer'
         ]
     });
 

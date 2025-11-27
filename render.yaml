@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: svg-to-catalogue-generator
+    env: node
+    buildCommand: npm install && npm run postinstall
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+
