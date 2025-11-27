@@ -4,7 +4,9 @@
   "description": "",
   "main": "generate.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "npx puppeteer browsers install chrome",
+    "start": "node your-app.js"
+
   },
   "keywords": [],
   "author": "",
