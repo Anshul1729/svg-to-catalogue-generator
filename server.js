@@ -59,21 +59,42 @@ async function generateBanners(svgPath, csvPath, outputDir) {
                           (fs.existsSync('/usr/bin/google-chrome-stable') ? '/usr/bin/google-chrome-stable' : 
                            fs.existsSync('/usr/bin/google-chrome') ? '/usr/bin/google-chrome' : undefined);
     
-    const browser = await puppeteer.launch({
-        headless: true,
-        executablePath: executablePath,
-        args: [
-            '--no-sandbox', 
-            '--disable-setuid-sandbox', 
-            '--disable-web-security',
-            '--disable-dev-shm-usage',
-            '--disable-gpu',
-            '--single-process',
-            '--disable-software-rasterizer'
-        ]
-    });
+    let browser;
+    try {
+        browser = await puppeteer.launch({
+            headless: true,
+            executablePath: executablePath,
+            args: [
+                '--no-sandbox', 
+                '--disable-setuid-sandbox', 
+                '--disable-web-security',
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--disable-software-rasterizer',
+                '--disable-extensions',
+                '--disable-background-timer-throttling',
+                '--disable-backgrounding-occluded-windows',
+                '--disable-renderer-backgrounding',
+                '--disable-features=TranslateUI',
+                '--disable-ipc-flooding-protection',
+                '--memory-pressure-off'
+            ],
+            timeout: 60000,
+            protocolTimeout: 60000
+        });
+    } catch (error) {
+        console.error('Failed to launch browser:', error);
+        throw new Error(`Browser launch failed: ${error.message}`);
+    }
 
-    const page = await browser.newPage();
+    let page;
+    try {
+        page = await browser.newPage();
+    } catch (error) {
+        console.error('Failed to create page:', error);
+        await browser.close();
+        throw new Error(`Page creation failed: ${error.message}`);
+    }
     await page.setViewport({ width: finalWidth, height: finalHeight });
     await page.setBypassCSP(true);
 
