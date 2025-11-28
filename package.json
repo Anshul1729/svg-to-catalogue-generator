@@ -4,8 +4,7 @@
   "description": "SVG to Catalogue Generator",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "postinstall": "node install-chrome.js"
+    "start": "node server.js"
   },
   "keywords": [],
   "author": "",
