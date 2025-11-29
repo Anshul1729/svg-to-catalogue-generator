@@ -1,44 +1,91 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Banner Automation Tool</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         /* Animation for the loader */
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
     </style>
 </head>
+
 <body class="bg-gray-50 min-h-screen p-8 font-sans">
-    
+
     <div class="max-w-6xl mx-auto">
-        <h1 class="text-3xl font-bold mb-2 text-gray-800">Banner Generator <span class="text-sm bg-blue-100 text-blue-800 py-1 px-2 rounded align-middle">Server Edition</span></h1>
-        
+        <h1 class="text-3xl font-bold mb-2 text-gray-800">Banner Generator <span
+                class="text-sm bg-blue-100 text-blue-800 py-1 px-2 rounded align-middle">Server Edition</span></h1>
+
         <div class="bg-white p-6 rounded-lg shadow-md mb-8 border border-gray-200">
-            <form id="uploadForm" class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-                <div>
-                    <label class="block text-sm font-bold mb-2 text-gray-700">1. SVG Template</label>
-                    <input type="file" name="svg" accept=".svg" required class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border rounded"/>
+            <form id="uploadForm" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-bold mb-2 text-gray-700">1. SVG Template</label>
+                        <input type="file" id="svgInput" name="svg" accept=".svg" required
+                            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border rounded" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-2 text-gray-700">2. CSV Data</label>
+                        <input type="file" id="csvInput" name="csv" accept=".csv" required
+                            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:bg-green-50 file:text-green-700 hover:file:bg-green-100 border rounded" />
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-bold mb-2 text-gray-700">2. CSV Data</label>
-                    <input type="file" name="csv" accept=".csv" required class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:bg-green-50 file:text-green-700 hover:file:bg-green-100 border rounded"/>
+
+                <!-- Mapping Section -->
+                <div id="mappingSection" class="hidden border-t pt-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">3. Map Data to SVG Elements</h3>
+                    <p class="text-sm text-gray-600 mb-4">Match your CSV columns to the SVG elements found in your
+                        template.</p>
+
+                    <div class="bg-gray-50 p-4 rounded border border-gray-200">
+                        <div id="mappingGrid" class="grid grid-cols-1 gap-4">
+                            <!-- Mapping items will be injected here -->
+                        </div>
+                    </div>
                 </div>
-                <button type="submit" id="generateBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded shadow transition-colors flex justify-center items-center gap-2">
-                    <span>Generate Previews</span>
-                </button>
+
+                <div class="flex justify-end pt-4">
+                    <button type="submit" id="generateBtn"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded shadow transition-colors flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span>Generate Previews</span>
+                    </button>
+                </div>
             </form>
-            <div id="loadingStatus" class="hidden mt-4 text-center text-blue-600 flex justify-center items-center gap-2">
+
+            <div id="loadingStatus"
+                class="hidden mt-4 text-center text-blue-600 flex justify-center items-center gap-2">
                 <div class="loader"></div> <span>Processing on server... this may take 10-20 seconds.</span>
             </div>
         </div>
 
         <div id="actionToolbar" class="hidden flex justify-between items-center mb-6">
             <h2 class="text-xl font-bold text-gray-700">Generated Results</h2>
-            <a id="downloadAllLink" href="#" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded shadow flex items-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            <a id="downloadAllLink" href="#"
+                class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded shadow flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
                 Download All (ZIP)
             </a>
         </div>
@@ -52,10 +99,178 @@
         const toolbar = document.getElementById('actionToolbar');
         const loader = document.getElementById('loadingStatus');
         const btn = document.getElementById('generateBtn');
+        const svgInput = document.getElementById('svgInput');
+        const csvInput = document.getElementById('csvInput');
+        const mappingSection = document.getElementById('mappingSection');
+        const mappingGrid = document.getElementById('mappingGrid');
+
+        let svgIds = [];
+        let csvHeaders = [];
+
+        // Watch for file inputs
+        svgInput.addEventListener('change', handleSvgUpload);
+        csvInput.addEventListener('change', handleCsvUpload);
+
+        // Hidden container for SVG processing
+        const hiddenContainer = document.createElement('div');
+        hiddenContainer.style.position = 'absolute';
+        hiddenContainer.style.left = '-9999px';
+        hiddenContainer.style.visibility = 'hidden';
+        document.body.appendChild(hiddenContainer);
+
+        async function handleSvgUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const text = await file.text();
+
+            // Render SVG in hidden container to calculate bounding boxes
+            hiddenContainer.innerHTML = text;
+            const svgElement = hiddenContainer.querySelector('svg');
+
+            if (!svgElement) {
+                alert("Invalid SVG file");
+                return;
+            }
+
+            // Ensure SVG has a viewBox or width/height for calculations
+            if (!svgElement.getAttribute('viewBox')) {
+                const w = svgElement.getAttribute('width') || svgElement.getBoundingClientRect().width;
+                const h = svgElement.getAttribute('height') || svgElement.getBoundingClientRect().height;
+                svgElement.setAttribute('viewBox', `0 0 ${parseFloat(w)} ${parseFloat(h)}`);
+            }
+
+            const allElements = hiddenContainer.querySelectorAll('[id]');
+            // Relaxed filter: Include 'g' (groups) and remove prefix restrictions
+            const validTags = ['text', 'tspan', 'image', 'rect', 'path', 'circle', 'ellipse', 'g'];
+
+            svgIds = Array.from(allElements)
+                .filter(el => {
+                    const tag = el.tagName.toLowerCase();
+                    // Just check if it's a valid tag. Show EVERYTHING with an ID.
+                    return validTags.includes(tag);
+                })
+                .map(el => {
+                    // Calculate BBox
+                    let bbox = { x: 0, y: 0, width: 100, height: 100 };
+                    try {
+                        if (el.getBBox) bbox = el.getBBox();
+                        else bbox = el.getBoundingClientRect();
+                    } catch (e) { }
+
+                    // Create a zoomed preview SVG
+                    const padding = 20;
+                    const viewBox = `${bbox.x - padding} ${bbox.y - padding} ${bbox.width + padding * 2} ${bbox.height + padding * 2}`;
+
+                    // Clone the SVG for preview
+                    const previewSvg = svgElement.cloneNode(true);
+                    previewSvg.setAttribute('viewBox', viewBox);
+                    previewSvg.setAttribute('width', '100%');
+                    previewSvg.setAttribute('height', '100%');
+                    previewSvg.style.width = '100%';
+                    previewSvg.style.height = '100%';
+
+                    // Highlight the specific element in the preview
+                    const targetEl = previewSvg.getElementById(el.id);
+                    if (targetEl) {
+                        targetEl.style.outline = '3px solid #ef4444'; // Red outline
+                        targetEl.style.outlineOffset = '2px';
+                        targetEl.style.filter = 'drop-shadow(0 0 4px rgba(0,0,0,0.3))';
+                    }
+
+                    return {
+                        id: el.id,
+                        tag: el.tagName,
+                        content: el.tagName === 'image' ? (el.getAttribute('href') || 'Image URL') : (el.textContent.trim().substring(0, 30) || 'Empty Text'),
+                        previewHtml: previewSvg.outerHTML
+                    };
+                });
+
+            updateMappingUI();
+        }
+
+        function handleCsvUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            Papa.parse(file, {
+                header: true,
+                preview: 1, // Read only first few lines to get headers
+                complete: function (results) {
+                    if (results.meta && results.meta.fields) {
+                        csvHeaders = results.meta.fields;
+                        updateMappingUI();
+                    }
+                }
+            });
+        }
+
+        function updateMappingUI() {
+            if (svgIds.length === 0 || csvHeaders.length === 0) {
+                mappingSection.classList.add('hidden');
+                return;
+            }
+
+            mappingSection.classList.remove('hidden');
+            mappingGrid.innerHTML = '';
+
+            svgIds.forEach(item => {
+                const row = document.createElement('div');
+                row.className = "flex flex-col md:flex-row md:items-start gap-6 p-6 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-all shadow-sm";
+
+                // Visual Preview (Left Side)
+                const previewDiv = document.createElement('div');
+                previewDiv.className = "w-full md:w-48 h-32 bg-gray-100 rounded border border-gray-200 overflow-hidden flex-shrink-0 relative";
+                previewDiv.innerHTML = item.previewHtml;
+
+                // SVG Info (Middle)
+                const infoDiv = document.createElement('div');
+                infoDiv.className = "flex-1 min-w-0 pt-1";
+
+                let contentPreview = '';
+                if (item.tag === 'image') {
+                    contentPreview = `<div class="text-xs text-gray-400 truncate mt-1">Image Source: ${item.content}</div>`;
+                } else {
+                    contentPreview = `<div class="text-sm text-gray-600 font-medium truncate mt-1">"${item.content}"</div>`;
+                }
+
+                infoDiv.innerHTML = `
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="font-mono text-base font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">#${item.id}</span>
+                        <span class="text-xs font-bold text-gray-500 uppercase tracking-wide border px-1.5 py-0.5 rounded bg-gray-50">${item.tag}</span>
+                    </div>
+                    ${contentPreview}
+                    <div class="text-xs text-gray-400 mt-2">Map this element to a CSV column below:</div>
+                `;
+
+                // CSV Dropdown (Right/Bottom)
+                const selectDiv = document.createElement('div');
+                selectDiv.className = "w-full md:w-64 pt-1";
+
+                const select = document.createElement('select');
+                select.className = "w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2";
+                select.name = `map_${item.id}`;
+                select.dataset.svgId = item.id;
+
+                let options = `<option value="">-- Ignore (Keep Default) --</option>`;
+                csvHeaders.forEach(header => {
+                    const isMatch = header.toLowerCase().replace(/[^a-z0-9]/g, '') === item.id.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    options += `<option value="${header}" ${isMatch ? 'selected' : ''}>Map to: ${header}</option>`;
+                });
+                select.innerHTML = options;
+
+                selectDiv.appendChild(select);
+
+                row.appendChild(previewDiv);
+                row.appendChild(infoDiv);
+                row.appendChild(selectDiv);
+                mappingGrid.appendChild(row);
+            });
+        }
 
         form.onsubmit = async (e) => {
             e.preventDefault();
-            
+
             // UI State: Loading
             btn.disabled = true;
             btn.classList.add('opacity-50');
@@ -65,6 +280,16 @@
 
             const formData = new FormData(e.target);
 
+            // Collect Mapping Data
+            const mapping = {};
+            const selects = mappingGrid.querySelectorAll('select');
+            selects.forEach(select => {
+                if (select.value) {
+                    mapping[select.dataset.svgId] = select.value;
+                }
+            });
+            formData.append('mapping', JSON.stringify(mapping));
+
             try {
                 const res = await fetch('/api/generate', { method: 'POST', body: formData });
                 const data = await res.json();
@@ -73,7 +298,7 @@
 
                 // Success!
                 renderGrid(data.sessionId, data.files);
-                
+
                 // Setup Download All Button
                 document.getElementById('downloadAllLink').href = `/api/download-zip/${data.sessionId}`;
                 toolbar.classList.remove('hidden');
@@ -112,4 +337,5 @@
         }
     </script>
 </body>
+
 </html>
