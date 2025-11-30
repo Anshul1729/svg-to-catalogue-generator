@@ -1,0 +1,20 @@
+<svg width="400" height="200" viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="200" fill="#f9f9f9"/>
+  
+  <!-- Product Image Placeholder -->
+  <rect id="image_url" x="10" y="10" width="180" height="180" fill="#e0e0e0" stroke="#ccc"/>
+  
+  <!-- Product Name -->
+  <text id="product_name" x="210" y="40" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#333">{{product_name}}</text>
+  
+  <!-- Rate -->
+  <text id="rate" x="210" y="90" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#4CAF50">₹{{rate}}</text>
+  
+  <!-- MRP -->
+  <text id="mrp" x="210" y="120" font-family="Arial, sans-serif" font-size="14" fill="#777">MRP: ₹{{mrp}}</text>
+  
+  <!-- Buy Button (Static) -->
+  <rect x="210" y="150" width="120" height="30" rx="5" fill="#e53935"/>
+  <text x="270" y="170" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle" font-weight="bold">अभी खरीदें</text>
+</svg>
