@@ -259,6 +259,103 @@ async function generateBanners(svgPath, csvPath, outputDir, mapping) {
                                         }
                                     }
                                 }
+
+                                // Truncation Logic: Prevent Overflow
+                                try {
+                                    const svg = document.querySelector('svg');
+                                    const svgWidth = svg.viewBox.baseVal.width || parseFloat(svg.getAttribute('width'));
+
+                                    // Only truncate if we can determine dimensions
+                                    if (svgWidth) {
+                                        const bbox = el.getBBox();
+                                        const x = bbox.x;
+                                        const width = bbox.width;
+                                        const margin = 10; // Safety margin
+
+                                        // Collision Detection (Disabled for stability - causing text to disappear)
+                                        // let rightBoundary = svgWidth;
+                                        // const allElements = document.querySelectorAll('text, image, rect, path, circle, ellipse, g');
+
+                                        // console.log(`[Collision] Checking collisions for ${svgId} (x=${x}, width=${width}). Initial Boundary: ${rightBoundary}`);
+
+                                        // allElements.forEach(other => {
+                                        //     if (other === el || other.contains(el) || el.contains(other)) return; // Skip self and hierarchy
+                                        //     if (other.tagName === 'g' && other.children.length === 0) return; // Skip empty groups
+
+                                        //     try {
+                                        //         const otherBBox = other.getBBox();
+
+                                        //         // Check for Vertical Overlap (Are they on the same line?)
+                                        //         const isVerticallyOverlapping = !(bbox.y + bbox.height < otherBBox.y || bbox.y > otherBBox.y + otherBBox.height);
+
+                                        //         // Check if it is strictly to the RIGHT of our text (with a buffer)
+                                        //         // Ignore elements that start at the same X or earlier (likely backgrounds/containers)
+                                        //         const isToTheRight = otherBBox.x > (bbox.x + 5);
+
+                                        //         // Ignore "Container" elements (much larger than the text)
+                                        //         const isContainer = otherBBox.width > (bbox.width * 1.5) && otherBBox.height > (bbox.height * 1.5);
+
+                                        //         if (isVerticallyOverlapping && isToTheRight && !isContainer) {
+                                        //             console.log(`[Collision] Potential neighbor: ${other.id || other.tagName} at x=${otherBBox.x}, y=${otherBBox.y}`);
+                                        //             if (otherBBox.x < rightBoundary) {
+                                        //                 rightBoundary = otherBBox.x;
+                                        //                 console.log(`[Collision] New Boundary set by ${other.id || other.tagName}: ${rightBoundary}`);
+                                        //             }
+                                        //         }
+                                        //     } catch (err) {
+                                        //         // Ignore elements without BBox (defs, etc)
+                                        //     }
+                                        // });
+
+                                        // let availableWidth = rightBoundary - x - margin;
+
+                                        // // Safety Check: If available width is too small (false collision?), default to SVG width
+                                        // if (availableWidth < 30) {
+                                        //     console.log(`[Collision] Available width ${availableWidth} is too small. Ignoring collisions and using full SVG width.`);
+                                        //     availableWidth = svgWidth - x - margin;
+                                        // }
+
+                                        // console.log(`[Collision] Final Available Width: ${availableWidth} (Required: ${width})`);
+
+                                        // Simple Width Calculation
+                                        const availableWidth = svgWidth - x - margin;
+
+                                        console.log(`[Truncation] Checking ${svgId}: Width=${width}, Available=${availableWidth}`);
+
+                                        if (width > availableWidth) {
+                                            console.log(`Text ${svgId} is too long. Truncating...`);
+
+                                            // Find the actual text node/element to truncate
+                                            // If we have tspans, we should truncate the one causing the overflow (or the last one)
+                                            // For simplicity, let's try to find the tspan with the most text or the one we just updated.
+                                            let targetEl = el;
+                                            const tspans = el.querySelectorAll('tspan');
+                                            if (tspans.length > 0) {
+                                                // Assume the text is in the last tspan or the one with content
+                                                // A better heuristic: find the tspan that contains the replacement value?
+                                                // Or just target the longest one?
+                                                // Let's target the last tspan as it's usually the one extending to the right.
+                                                targetEl = tspans[tspans.length - 1];
+                                                console.log(`[Truncation] Targeting tspan: ${targetEl.id || 'anonymous'}`);
+                                            }
+
+                                            let text = targetEl.textContent;
+                                            let loopCount = 0;
+
+                                            // Iteratively remove characters until the PARENT fits (or the target fits?)
+                                            // We must check the PARENT's BBox because that's what matters for the layout.
+                                            while (el.getBBox().width > availableWidth && text.length > 0) {
+                                                text = text.slice(0, -1);
+                                                targetEl.textContent = text + '...';
+                                                loopCount++;
+                                                if (loopCount % 10 === 0) console.log(`[Truncation] Loop ${loopCount}: "${targetEl.textContent}" Width=${el.getBBox().width}`);
+                                            }
+                                            console.log(`[Truncation] Final Result: "${targetEl.textContent}" Width=${el.getBBox().width}`);
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.log("Error in truncation:", e);
+                                }
                             }
                         }
                     }

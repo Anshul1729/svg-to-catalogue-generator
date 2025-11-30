@@ -214,9 +214,65 @@
             mappingSection.classList.remove('hidden');
             mappingGrid.innerHTML = '';
 
+            // Categorize elements
+            const categories = {
+                image: [],
+                shape: [],
+                text: [],
+                group: []
+            };
+
             svgIds.forEach(item => {
+                const tagName = item.tag.toLowerCase();
+
+                // Check for auto-match to prioritize
+                let matchScore = 0;
+                if (csvHeaders.length > 0) {
+                    const match = csvHeaders.find(header =>
+                        header.toLowerCase().replace(/[^a-z0-9]/g, '') === item.id.toLowerCase().replace(/[^a-z0-9]/g, '')
+                    );
+                    if (match) matchScore = 1;
+                }
+
+                // Determine Category
+                let category = 'text'; // Default
+                if (tagName === 'image') category = 'image';
+                else if (['rect', 'circle', 'ellipse'].includes(tagName)) category = 'shape';
+                else if (tagName === 'g' || tagName === 'path') category = 'group'; // Hide paths and groups
+
+                // OVERRIDE: If matched, force into a visible category (e.g., shape or text)
+                // This ensures it appears at the top and isn't hidden
+                if (matchScore > 0 && category === 'group') {
+                    category = 'shape'; // Move to visible shape category
+                }
+
+                categories[category].push({ ...item, matchScore });
+            });
+
+            // Sort function: Match Score DESC, then ID ASC
+            const sorter = (a, b) => {
+                if (b.matchScore !== a.matchScore) return b.matchScore - a.matchScore;
+                return a.id.localeCompare(b.id);
+            };
+
+            categories.image.sort(sorter);
+            categories.shape.sort(sorter);
+            categories.text.sort(sorter);
+            categories.group.sort(sorter);
+
+            // Helper: Render a single item row
+            const renderItem = (item) => {
                 const row = document.createElement('div');
                 row.className = "flex flex-col md:flex-row md:items-start gap-6 p-6 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-all shadow-sm";
+
+                // Auto-select logic
+                let selectedHeader = '';
+                if (csvHeaders.length > 0) {
+                    const match = csvHeaders.find(header =>
+                        header.toLowerCase().replace(/[^a-z0-9]/g, '') === item.id.toLowerCase().replace(/[^a-z0-9]/g, '')
+                    );
+                    if (match) selectedHeader = match;
+                }
 
                 // Visual Preview (Left Side)
                 const previewDiv = document.createElement('div');
@@ -264,8 +320,54 @@
                 row.appendChild(previewDiv);
                 row.appendChild(infoDiv);
                 row.appendChild(selectDiv);
-                mappingGrid.appendChild(row);
-            });
+                return row;
+            };
+
+            // 1. Render Images
+            categories.image.forEach(item => mappingGrid.appendChild(renderItem(item)));
+
+            // 2. Render Shapes
+            categories.shape.forEach(item => mappingGrid.appendChild(renderItem(item)));
+
+            // 3. Render Texts
+            categories.text.forEach(item => mappingGrid.appendChild(renderItem(item)));
+
+            // 4. Render Groups (Hidden by default)
+            if (categories.group.length > 0) {
+                const groupContainer = document.createElement('div');
+                groupContainer.className = "col-span-full mt-8 border-t border-gray-200 pt-4";
+
+                const toggleBtn = document.createElement('button');
+                toggleBtn.type = "button";
+                toggleBtn.className = "flex items-center text-sm font-medium text-gray-600 hover:text-blue-600 focus:outline-none transition-colors";
+                toggleBtn.innerHTML = `
+                    <svg class="w-4 h-4 mr-2 transform transition-transform" id="groupToggleIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    Show Advanced / Groups (${categories.group.length})
+                `;
+
+                const groupItemsDiv = document.createElement('div');
+                groupItemsDiv.id = "groupItems";
+                groupItemsDiv.className = "hidden grid grid-cols-1 gap-6 mt-4"; // Same grid layout as parent? Parent is flex-col in HTML? No, mappingGrid is likely a grid or flex-col.
+                // Wait, mappingGrid class in HTML: <div id="mappingGrid" class="space-y-4">
+                // So it's a vertical stack.
+                groupItemsDiv.className = "hidden space-y-4 mt-4";
+
+                toggleBtn.onclick = () => {
+                    groupItemsDiv.classList.toggle('hidden');
+                    const icon = toggleBtn.querySelector('#groupToggleIcon');
+                    if (groupItemsDiv.classList.contains('hidden')) {
+                        icon.classList.remove('rotate-180');
+                    } else {
+                        icon.classList.add('rotate-180');
+                    }
+                };
+
+                categories.group.forEach(item => groupItemsDiv.appendChild(renderItem(item)));
+
+                groupContainer.appendChild(toggleBtn);
+                groupContainer.appendChild(groupItemsDiv);
+                mappingGrid.appendChild(groupContainer);
+            }
         }
 
         form.onsubmit = async (e) => {
