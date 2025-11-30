@@ -139,7 +139,7 @@ async function generateBanners(svgPath, csvPath, outputDir, mapping) {
 
                             if (tagName === 'image') {
                                 el.setAttribute('href', value);
-                                el.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+                                el.setAttribute('preserveAspectRatio', 'xMidYMid meet');
                             } else if (['rect', 'path', 'circle', 'ellipse'].includes(tagName)) {
                                 // Check if value looks like an image URL
                                 const isImageUrl = value.match(/\.(jpeg|jpg|gif|png|webp)$/i) ||
@@ -164,7 +164,7 @@ async function generateBanners(svgPath, csvPath, outputDir, mapping) {
                                         img.setAttribute('height', bbox.height);
                                     }
 
-                                    img.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+                                    img.setAttribute('preserveAspectRatio', 'xMidYMid meet');
                                     img.setAttribute('href', value);
                                     img.setAttribute('id', el.id); // Keep the same ID
 
