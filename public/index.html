@@ -265,15 +265,10 @@
             }
 
             const allElements = hiddenContainer.querySelectorAll('[id]');
-            // Relaxed filter: Include 'g' (groups) and remove prefix restrictions
-            const validTags = ['text', 'tspan', 'image', 'rect', 'path', 'circle', 'ellipse', 'g'];
+            // Filter: Only allow text, images, rects (for image placeholders), and groups.
+            // Removed 'path', 'circle', 'ellipse' as they are usually decorative.
+            const validTags = ['text', 'tspan', 'image', 'rect', 'g'];
 
-            svgIds = Array.from(allElements)
-                .filter(el => {
-                    const tag = el.tagName.toLowerCase();
-                    // Just check if it's a valid tag. Show EVERYTHING with an ID.
-                    return validTags.includes(tag);
-                })
             svgIds = Array.from(allElements)
                 .filter(el => {
                     const tag = el.tagName.toLowerCase();
