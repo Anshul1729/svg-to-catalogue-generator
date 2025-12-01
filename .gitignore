@@ -5,3 +5,8 @@ uploads
 *.zip
 banner-tool*.html
 generate.js
+public/temp
+debug_output
+debug_*
+reproduce_*
+verify_backend.js
