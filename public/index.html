@@ -116,14 +116,15 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
 
                     <!-- SVG Upload -->
-                    <div class="group relative">
+                    <div class="group relative flex flex-col h-full">
                         <label class="block text-sm font-semibold text-stone-700 mb-2 flex items-center gap-2">
                             <span
                                 class="w-6 h-6 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center text-xs">1</span>
                             Upload Template (SVG)
                         </label>
+
                         <div
-                            class="relative border-2 border-dashed border-stone-300 rounded-xl p-6 transition-all duration-200 hover:border-teal-500 hover:bg-teal-50/30 group-hover:shadow-md">
+                            class="relative border-2 border-dashed border-stone-300 rounded-xl p-6 transition-all duration-200 hover:border-teal-500 hover:bg-teal-50/30 group-hover:shadow-md flex-1 flex flex-col justify-center">
                             <input type="file" id="svgInput" name="svg" accept=".svg" required
                                 class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
                             <div class="text-center pointer-events-none">
@@ -137,19 +138,34 @@
                                 </div>
                                 <p class="text-sm font-medium text-stone-900">Drop SVG file here</p>
                                 <p class="text-xs text-stone-500 mt-1">or click to browse</p>
+                                <p
+                                    class="text-[10px] text-orange-600 mt-3 font-medium bg-orange-50 inline-block px-2 py-1 rounded border border-orange-100">
+                                    <span class="font-bold">Figma Export:</span> Select Include "id" Attribute and
+                                    deselect other checkboxes while exporting image from figma
+                                </p>
                             </div>
                         </div>
                     </div>
 
                     <!-- CSV Upload -->
-                    <div class="group relative">
-                        <label class="block text-sm font-semibold text-stone-700 mb-2 flex items-center gap-2">
-                            <span
-                                class="w-6 h-6 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center text-xs">2</span>
-                            Upload Data (CSV)
-                        </label>
+                    <div class="group relative flex flex-col h-full">
+                        <div class="flex justify-between items-end mb-2">
+                            <label class="block text-sm font-semibold text-stone-700 flex items-center gap-2">
+                                <span
+                                    class="w-6 h-6 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center text-xs">2</span>
+                                Upload Data (CSV)
+                            </label>
+                            <a href="/samples/sample.csv" download="sample_data.csv"
+                                class="text-xs text-rose-600 hover:text-rose-800 font-medium flex items-center gap-1 transition-colors">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                </svg>
+                                Download Sample CSV
+                            </a>
+                        </div>
                         <div
-                            class="relative border-2 border-dashed border-stone-300 rounded-xl p-6 transition-all duration-200 hover:border-rose-500 hover:bg-rose-50/30 group-hover:shadow-md">
+                            class="relative border-2 border-dashed border-stone-300 rounded-xl p-6 transition-all duration-200 hover:border-rose-500 hover:bg-rose-50/30 group-hover:shadow-md flex-1 flex flex-col justify-center">
                             <input type="file" id="csvInput" name="csv" accept=".csv" required
                                 class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
                             <div class="text-center pointer-events-none">
@@ -224,6 +240,15 @@
                         d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
                 </svg>
                 Download All (ZIP)
+            </a>
+            <a id="downloadReportLink" href="#"
+                class="bg-white border border-stone-300 hover:bg-stone-50 text-stone-700 font-bold py-2 px-6 rounded-lg shadow-sm transition-colors flex items-center gap-2 ml-4">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                    </path>
+                </svg>
+                Download Report (CSV)
             </a>
         </div>
 
@@ -602,6 +627,15 @@
 
                 // Setup Download All Button
                 document.getElementById('downloadAllLink').href = `/api/download-zip/${data.sessionId}`;
+
+                // Setup Report Button
+                const reportBtn = document.getElementById('downloadReportLink');
+                if (data.report) {
+                    reportBtn.href = `/api/download-report/${data.sessionId}`;
+                    reportBtn.classList.remove('hidden');
+                } else {
+                    reportBtn.classList.add('hidden');
+                }
                 toolbar.classList.remove('hidden');
 
                 // Scroll to results

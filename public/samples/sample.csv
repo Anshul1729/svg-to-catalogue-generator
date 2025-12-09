@@ -1,3 +1,3 @@
-product_name,rate,mrp,image_url
-लौंग (25g),49,70,https://kiranaclubcdn.retailpulse.ai/brands/chukde/products/400x400/chukde_1038.webp
-अजवाइन (100g),50.05,65,https://kiranaclubcdn.retailpulse.ai/brands/chukde/products/400x400/chukde_1007.webp
+product_id,product_name,rate,mrp,image_url
+101,लौंग (25g),49,70,https://kiranaclubcdn.retailpulse.ai/brands/chukde/products/400x400/chukde_1038.webp
+102,अजवाइन (100g),50.05,65,https://kiranaclubcdn.retailpulse.ai/brands/chukde/products/400x400/chukde_1007.webp

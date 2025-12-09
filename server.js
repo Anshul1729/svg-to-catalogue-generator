@@ -385,8 +385,80 @@ async function generateBanners(svgPath, csvPath, outputDir, mapping) {
         generatedFiles.push({ name: row.product_name || `Banner ${i + 1}`, fileName: fileName });
     }
 
+    // Upload Images and Collect Data
+    const reportData = [];
+
+    for (let i = 0; i < generatedFiles.length; i++) {
+        const fileInfo = generatedFiles[i];
+        const filePath = path.join(outputDir, fileInfo.fileName);
+
+        console.log(`Uploading ${fileInfo.fileName}...`);
+        try {
+            const uploadUrl = await uploadToApi(filePath, fileInfo.fileName);
+            fileInfo.uploadedUrl = uploadUrl;
+            console.log(`Uploaded: ${uploadUrl}`);
+        } catch (err) {
+            console.error(`Upload failed for ${fileInfo.fileName}:`, err.message);
+            fileInfo.uploadedUrl = "UPLOAD_FAILED";
+        }
+
+        // Find original row data
+        // generatedFiles indexes might match rows if 1:1. 
+        // generateBanners iterates rows i=0..length.
+        // generatedFiles.push matches this order.
+        const originalRow = rows[i];
+
+        // Merge original row with new data
+        reportData.push({
+            ...originalRow,
+            generated_file: fileInfo.fileName,
+            uploaded_url: fileInfo.uploadedUrl
+        });
+    }
+
     await browser.close();
-    return generatedFiles;
+    return { generatedFiles, reportData };
+}
+
+async function uploadToApi(filePath, fileName) {
+    const fileBuffer = fs.readFileSync(filePath);
+    const blob = new Blob([fileBuffer], { type: 'image/png' }); // Node 18+ has Blob
+
+    // In Node < 18 or if Blob issues, we might need 'form-data' package, 
+    // but the environment check showed fetch/FormData/Blob are available (v24).
+
+    const formData = new FormData();
+    formData.append('file', blob, fileName);
+
+    const response = await fetch('https://kc.retailpulse.ai/api/photoUpload?blob=widgets', {
+        method: 'POST',
+        headers: {
+            'accept': '*/*',
+            'accept-language': 'en-US,en;q=0.9',
+            'authorization': 'eyJhbGciOiJSUzI1NiIsImtpZCI6ImJhNjNiNDM2ODM2YTkzOWI3OTViNDEyMmQzZjRkMGQyMjVkMWM3MDAiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJhY2NvdW50cy5nb29nbGUuY29tIiwiYXpwIjoiMzQyNjIyMTM0Nzc3LWxvb2Q5b2I2dnNhdHNydW9xdWY3Y3VtbTRxbzc4b3JpLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwiYXVkIjoiMzQyNjIyMTM0Nzc3LWxvb2Q5b2I2dnNhdHNydW9xdWY3Y3VtbTRxbzc4b3JpLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwic3ViIjoiMTEwNTc5OTcxNDcxMTk4NTAwMjgzIiwiaGQiOiJraXJhbmEuY2x1YiIsImVtYWlsIjoiYW5zaHVsLnNoaXZoYXJlQGtpcmFuYS5jbHViIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImF0X2hhc2giOiJpX0VmY2R4cTJOdlA5ZXEzM1dmYnVnIiwibmJmIjoxNzU0NDYwODUwLCJuYW1lIjoiQW5zaHVsIFNoaXZoYXJlIiwicGljdHVyZSI6Imh0dHBzOi8vbGgzLmdvb2dsZXVzZXJjb250ZW50LmNvbS9hL0FDZzhvY0tKenVNd0JCUWdhbndwV3pEREhyQlRhNGFqWVVIUFlQMWFNYTNmTWdQWklWUXkwdz1zOTYtYyIsImdpdmVuX25hbWUiOiJBbnNodWwiLCJmYW1pbHlfbmFtZSI6IlNoaXZoYXJlIiwiaWF0IjoxNzU0NDYxMTUwLCJleHAiOjE3NTQ0NjQ3NTAsImp0aSI6IjY0ODIyYjU2MjExYmQ1ZjlmYjU1NzE4MDQ1ZDc2NTQyYzQzZGE2YjYifQ.m8epXZHpMahp-_A0IOZ2xTJ7PbFMx_6uTtXiak-dZSzbxskFya7TPjnzH56zBSGOExEKa9oIXSOvb31pcQ0CQQUwlXGtu76XW8vZRcQ0cj_fYk-zIWuX5ycB3CIxVxziNhSXqHdPzhzUO3W61cDNO4FpGSvu0AkyRfCGkqRDdKW4fnRN9WwyCOxybmOxt-6bq-y2NF0uRY0Ozu3Qi1xpQE4YA-wnk5NejIGkfF9y-klx5jg4oqQV5WKyINd-Yu6swAS9KD7D99hXDg3-QspWJmi4WC7nIVw8KCnJ4U240Vu3qRZ_gGSAiBCOk1iDXDD0-Qixcfmk0bHxHNlu6yJgtg',
+            'origin': 'https://d2r.retailpulse.ai',
+            'priority': 'u=1, i',
+            'sec-ch-ua': '"Google Chrome";v="141", "Not?A_Brand";v="8", "Chromium";v="141"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"macOS"',
+            'sec-fetch-dest': 'empty',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-site': 'same-site',
+            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
+        },
+        body: formData
+    });
+
+    if (!response.ok) {
+        throw new Error(`API responded with ${response.status} ${response.statusText}`);
+    }
+
+    // The user said the response is just the string URL, e.g. "https://..."
+    // But usually APIs return JSON. The example showed just the string. 
+    // Let's try text first.
+    const responseText = await response.text();
+    // Remove quotes if present
+    return responseText.replace(/^"|"$/g, '');
 }
 
 // --- API ENDPOINTS ---
@@ -403,7 +475,12 @@ app.post('/api/generate', upload.fields([{ name: 'svg' }, { name: 'csv' }]), asy
         const sessionDir = path.join(PUBLIC_TEMP_DIR, sessionId);
         fs.mkdirSync(sessionDir, { recursive: true });
 
-        const files = await generateBanners(req.files.svg[0].path, req.files.csv[0].path, sessionDir, mapping);
+        const { generatedFiles, reportData } = await generateBanners(req.files.svg[0].path, req.files.csv[0].path, sessionDir, mapping);
+
+        // Generate CSV Report
+        const csvReport = Papa.unparse(reportData);
+        const reportPath = path.join(sessionDir, 'report.csv');
+        fs.writeFileSync(reportPath, csvReport);
 
         // Cleanup uploads
         try {
@@ -413,7 +490,7 @@ app.post('/api/generate', upload.fields([{ name: 'svg' }, { name: 'csv' }]), asy
             console.log("Cleanup warning:", e.message);
         }
 
-        res.json({ success: true, sessionId, files });
+        res.json({ success: true, sessionId, files: generatedFiles, report: 'report.csv' });
 
     } catch (e) {
         console.error("Generation error:", e);
@@ -433,6 +510,14 @@ app.get('/api/download-zip/:sessionId', (req, res) => {
     res.set('Content-Type', 'application/zip');
     res.set('Content-Disposition', 'attachment; filename=banners.zip');
     res.send(zipBuffer);
+});
+
+// 3. Download Report
+app.get('/api/download-report/:sessionId', (req, res) => {
+    const reportPath = path.join(PUBLIC_TEMP_DIR, req.params.sessionId, 'report.csv');
+    if (!fs.existsSync(reportPath)) return res.status(404).send("Report not found");
+
+    res.download(reportPath, 'upload_report.csv');
 });
 
 const PORT = process.env.PORT || 3000;
